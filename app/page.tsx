@@ -107,6 +107,8 @@ const DEFAULT_LINKS: Link[] = [
   { id: "84", title: "케이벤치", url: "http://www.kbench.com/" },
 ]
 
+const LINKS_VERSION = "2"
+
 const DEFAULT_SETTINGS: Settings = {
   theme: "system",
   columns: 3,
@@ -129,17 +131,19 @@ function HomeContent() {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
 
   useEffect(() => {
+    const savedVersion = localStorage.getItem("my-links-version")
     const savedLinks = localStorage.getItem("my-links")
     const savedSettings = localStorage.getItem("my-links-settings")
-    
-    if (savedLinks) {
+
+    if (!savedLinks || savedVersion !== LINKS_VERSION) {
+      setLinks(DEFAULT_LINKS)
+      localStorage.setItem("my-links-version", LINKS_VERSION)
+    } else {
       try {
         setLinks(JSON.parse(savedLinks))
       } catch {
         setLinks(DEFAULT_LINKS)
       }
-    } else {
-      setLinks(DEFAULT_LINKS)
     }
 
     if (savedSettings) {
