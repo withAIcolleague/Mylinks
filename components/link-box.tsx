@@ -61,7 +61,7 @@ export function LinkBox({
     longPressTimer.current = setTimeout(() => {
       didLongPress.current = true
       onLongPress?.(id)
-    }, 500)
+    }, 300)
   }
 
   const handlePointerUp = () => {
@@ -73,13 +73,14 @@ export function LinkBox({
   }
 
   const handleClick = (e: React.MouseEvent) => {
+    if (didLongPress.current) {
+      e.preventDefault()
+      didLongPress.current = false
+      return
+    }
     if (isSelectionMode) {
       e.preventDefault()
       onSelect?.(id)
-      return
-    }
-    if (didLongPress.current) {
-      e.preventDefault()
     }
   }
 
