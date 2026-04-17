@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { LinkBox } from "@/components/link-box"
 import { AddLinkBox } from "@/components/add-link-box"
@@ -34,7 +34,8 @@ const DEFAULT_SETTINGS: Settings = {
   boxSize: "medium",
 }
 
-export default function Home() {
+// useSearchParams를 사용하는 내부 컴포넌트 — Suspense로 감싸야 함
+function HomeContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   
@@ -226,5 +227,27 @@ export default function Home() {
         onDeleteLinks={handleDeleteLinks}
       />
     </main>
+  )
+}
+
+// useSearchParams()는 Suspense 경계 안에서만 사용 가능 (Next.js App Router)
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 sm:gap-4">
+            {[...Array(9)].map((_, i) => (
+              <div
+                key={i}
+                className="aspect-square bg-card rounded-xl border border-border animate-pulse"
+              />
+            ))}
+          </div>
+        </div>
+      </main>
+    }>
+      <HomeContent />
+    </Suspense>
   )
 }
