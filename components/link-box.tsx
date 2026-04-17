@@ -1,7 +1,7 @@
 "use client"
 
-import { ExternalLink, Trash2 } from "lucide-react"
-import { useState } from "react"
+import { ExternalLink, Check } from "lucide-react"
+import { useRef } from "react"
 
 interface LinkBoxProps {
   id: string
@@ -10,11 +10,20 @@ interface LinkBoxProps {
   color?: string
   size?: "small" | "medium" | "large"
   columns?: number
+  isSelectionMode?: boolean
+  isSelected?: boolean
   onDelete: (id: string) => void
+  onLongPress?: (id: string) => void
+  onSelect?: (id: string) => void
 }
 
-export function LinkBox({ id, title, url, color = "bg-card", size = "medium", columns = 3, onDelete }: LinkBoxProps) {
-  const [faviconError, setFaviconError] = useState(false)
+export function LinkBox({
+  id, title, url, color = "bg-card", size = "medium", columns = 3,
+  isSelectionMode = false, isSelected = false,
+  onDelete, onLongPress, onSelect,
+}: LinkBoxProps) {
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const didLongPress = useRef(false)
 
   const getFaviconUrl = (siteUrl: string) => {
     try {
@@ -47,22 +56,60 @@ export function LinkBox({ id, title, url, color = "bg-card", size = "medium", co
     return { small: "text-[10px] sm:text-xs", medium: "text-xs sm:text-sm", large: "text-sm sm:text-base" }[size] ?? "text-xs sm:text-sm"
   }
 
+  const handlePointerDown = () => {
+    didLongPress.current = false
+    longPressTimer.current = setTimeout(() => {
+      didLongPress.current = true
+      onLongPress?.(id)
+    }, 500)
+  }
+
+  const handlePointerUp = () => {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current)
+  }
+
+  const handlePointerMove = () => {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current)
+  }
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (isSelectionMode) {
+      e.preventDefault()
+      onSelect?.(id)
+      return
+    }
+    if (didLongPress.current) {
+      e.preventDefault()
+    }
+  }
+
   return (
     <div
-      className={`relative aspect-square ${color} rounded-xl border border-border overflow-hidden transition-all duration-200 hover:scale-[1.02] hover:border-primary/50 group`}
+      className={`relative aspect-square ${color} rounded-xl border transition-all duration-200 overflow-hidden
+        ${isSelectionMode
+          ? isSelected
+            ? "border-primary scale-[0.96] ring-2 ring-primary"
+            : "border-border scale-[0.96]"
+          : "border-border hover:scale-[1.02] hover:border-primary/50 group"
+        }`}
     >
       <a
-        href={url}
+        href={isSelectionMode ? undefined : url}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex flex-col items-center justify-center h-full p-2 sm:p-3 gap-1.5 sm:gap-2"
+        className="flex flex-col items-center justify-center h-full p-2 sm:p-3 gap-1.5 sm:gap-2 select-none"
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerMove={handlePointerMove}
+        onPointerLeave={handlePointerUp}
+        onClick={handleClick}
+        draggable={false}
       >
-        {favicon && !faviconError ? (
+        {favicon ? (
           <img
             src={favicon}
             alt=""
             className={`${getIconSize()} rounded-md object-contain`}
-            onError={() => setFaviconError(true)}
             referrerPolicy="no-referrer"
           />
         ) : (
@@ -73,17 +120,12 @@ export function LinkBox({ id, title, url, color = "bg-card", size = "medium", co
         </span>
       </a>
 
-      <button
-        onClick={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          onDelete(id)
-        }}
-        className={`absolute top-1.5 right-1.5 sm:top-2 sm:right-2 p-1 sm:p-1.5 rounded-md bg-destructive/90 text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-destructive`}
-        aria-label="삭제"
-      >
-        <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-      </button>
+      {isSelectionMode && (
+        <div className={`absolute top-1.5 right-1.5 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all
+          ${isSelected ? "bg-primary border-primary" : "bg-background/80 border-muted-foreground/50"}`}>
+          {isSelected && <Check className="w-3 h-3 text-primary-foreground" />}
+        </div>
+      )}
     </div>
   )
 }

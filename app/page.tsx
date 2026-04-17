@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
+import { Trash2, X } from "lucide-react"
 import { LinkBox } from "@/components/link-box"
 import { AddLinkBox } from "@/components/add-link-box"
 import { AddLinkModal } from "@/components/add-link-modal"
@@ -46,6 +47,8 @@ function HomeContent() {
   const [isLoaded, setIsLoaded] = useState(false)
   const [quickAddUrl, setQuickAddUrl] = useState<string | null>(null)
   const [quickAddTitle, setQuickAddTitle] = useState<string | null>(null)
+  const [isSelectionMode, setIsSelectionMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
 
   useEffect(() => {
     const savedLinks = localStorage.getItem("my-links")
@@ -140,6 +143,28 @@ function HomeContent() {
     setLinks((prev) => prev.filter((link) => !ids.includes(link.id)))
   }
 
+  const handleLongPress = (id: string) => {
+    setIsSelectionMode(true)
+    setSelectedIds([id])
+  }
+
+  const handleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    )
+  }
+
+  const handleSelectionDelete = () => {
+    handleDeleteLinks(selectedIds)
+    setIsSelectionMode(false)
+    setSelectedIds([])
+  }
+
+  const handleCancelSelection = () => {
+    setIsSelectionMode(false)
+    setSelectedIds([])
+  }
+
   const getGridClasses = () => {
     const baseColumns = settings.columns
     const columnClasses: Record<number, string> = {
@@ -190,8 +215,8 @@ function HomeContent() {
     <main className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         <div className={`grid ${getGridClasses()} ${getGapClasses()} ${getBoxSizeClasses()}`}>
-          <AddLinkBox onClick={() => setIsModalOpen(true)} />
-          
+          {!isSelectionMode && <AddLinkBox onClick={() => setIsModalOpen(true)} />}
+
           {links.map((link) => (
             <LinkBox
               key={link.id}
@@ -201,12 +226,39 @@ function HomeContent() {
               onDelete={handleDeleteLink}
               size={settings.boxSize}
               columns={settings.columns}
+              isSelectionMode={isSelectionMode}
+              isSelected={selectedIds.includes(link.id)}
+              onLongPress={handleLongPress}
+              onSelect={handleSelect}
             />
           ))}
 
-          <SettingsBox onClick={() => setIsSettingsOpen(true)} />
+          {!isSelectionMode && <SettingsBox onClick={() => setIsSettingsOpen(true)} />}
         </div>
       </div>
+
+      {isSelectionMode && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-card border border-border rounded-2xl shadow-2xl px-4 py-3">
+          <span className="text-sm text-muted-foreground min-w-[60px] text-center">
+            {selectedIds.length}개 선택
+          </span>
+          <button
+            onClick={handleSelectionDelete}
+            disabled={selectedIds.length === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-destructive text-destructive-foreground rounded-xl text-sm font-medium disabled:opacity-40 transition-opacity"
+          >
+            <Trash2 className="w-4 h-4" />
+            삭제
+          </button>
+          <button
+            onClick={handleCancelSelection}
+            className="flex items-center gap-2 px-4 py-2 bg-muted text-foreground rounded-xl text-sm font-medium transition-colors hover:bg-muted/80"
+          >
+            <X className="w-4 h-4" />
+            취소
+          </button>
+        </div>
+      )}
 
       <AddLinkModal
         isOpen={isModalOpen}
