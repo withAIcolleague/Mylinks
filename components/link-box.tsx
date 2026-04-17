@@ -9,10 +9,11 @@ interface LinkBoxProps {
   url: string
   color?: string
   size?: "small" | "medium" | "large"
+  columns?: number
   onDelete: (id: string) => void
 }
 
-export function LinkBox({ id, title, url, color = "bg-card", size = "medium", onDelete }: LinkBoxProps) {
+export function LinkBox({ id, title, url, color = "bg-card", size = "medium", columns = 3, onDelete }: LinkBoxProps) {
   const [faviconError, setFaviconError] = useState(false)
 
   const getFaviconUrl = (siteUrl: string) => {
@@ -27,21 +28,23 @@ export function LinkBox({ id, title, url, color = "bg-card", size = "medium", on
   const favicon = getFaviconUrl(url)
 
   const getIconSize = () => {
-    const sizes: Record<string, string> = {
-      small: "w-6 h-6 sm:w-7 sm:h-7",
-      medium: "w-8 h-8 sm:w-10 sm:h-10",
-      large: "w-10 h-10 sm:w-12 sm:h-12",
+    if (columns >= 5) {
+      return { small: "w-5 h-5 sm:w-6 sm:h-6", medium: "w-6 h-6 sm:w-7 sm:h-7", large: "w-7 h-7 sm:w-8 sm:h-8" }[size] ?? "w-6 h-6 sm:w-7 sm:h-7"
     }
-    return sizes[size] || sizes.medium
+    if (columns === 4) {
+      return { small: "w-5 h-5 sm:w-6 sm:h-6", medium: "w-7 h-7 sm:w-8 sm:h-8", large: "w-8 h-8 sm:w-10 sm:h-10" }[size] ?? "w-7 h-7 sm:w-8 sm:h-8"
+    }
+    return { small: "w-6 h-6 sm:w-7 sm:h-7", medium: "w-8 h-8 sm:w-10 sm:h-10", large: "w-10 h-10 sm:w-12 sm:h-12" }[size] ?? "w-8 h-8 sm:w-10 sm:h-10"
   }
 
   const getTextSize = () => {
-    const sizes: Record<string, string> = {
-      small: "text-[10px] sm:text-xs",
-      medium: "text-xs sm:text-sm",
-      large: "text-sm sm:text-base",
+    if (columns >= 5) {
+      return { small: "text-[8px] sm:text-[10px]", medium: "text-[9px] sm:text-[11px]", large: "text-[10px] sm:text-xs" }[size] ?? "text-[9px] sm:text-[11px]"
     }
-    return sizes[size] || sizes.medium
+    if (columns === 4) {
+      return { small: "text-[9px] sm:text-[10px]", medium: "text-[10px] sm:text-xs", large: "text-xs sm:text-sm" }[size] ?? "text-[10px] sm:text-xs"
+    }
+    return { small: "text-[10px] sm:text-xs", medium: "text-xs sm:text-sm", large: "text-sm sm:text-base" }[size] ?? "text-xs sm:text-sm"
   }
 
   return (

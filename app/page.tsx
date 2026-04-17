@@ -200,6 +200,7 @@ function HomeContent() {
               url={link.url}
               onDelete={handleDeleteLink}
               size={settings.boxSize}
+              columns={settings.columns}
             />
           ))}
 
