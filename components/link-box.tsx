@@ -103,6 +103,7 @@ export function LinkBox({
         onPointerMove={handlePointerMove}
         onPointerLeave={handlePointerUp}
         onClick={handleClick}
+        onContextMenu={(e) => e.preventDefault()}
         draggable={false}
       >
         {favicon ? (
