@@ -179,7 +179,7 @@ export function SettingsModal({
                   열 개수 (모바일 기준)
                 </label>
                 <div className="flex gap-2">
-                  {[2, 3, 4].map((cols) => (
+                  {[2, 3, 4, 5].map((cols) => (
                     <button
                       key={cols}
                       onClick={() => onSettingsChange({ ...settings, columns: cols })}
