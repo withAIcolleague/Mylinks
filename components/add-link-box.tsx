@@ -14,7 +14,6 @@ export function AddLinkBox({ onClick }: AddLinkBoxProps) {
       aria-label="링크 추가"
     >
       <Plus className="w-8 h-8 sm:w-10 sm:h-10 text-primary" strokeWidth={2.5} />
-      <span className="text-xs sm:text-sm font-medium text-primary">추가</span>
     </button>
   )
 }
