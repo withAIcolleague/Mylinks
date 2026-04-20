@@ -28,20 +28,20 @@ interface Settings {
 }
 
 const DEFAULT_LINKS: Link[] = [
-  { id: "1", title: "디시인사이드", url: "https://www.dcinside.com/" },
   { id: "2", title: "뽐뿌", url: "https://www.ppomppu.co.kr/" },
   { id: "3", title: "에펨코리아", url: "https://www.fmkorea.com/" },
   { id: "4", title: "클리앙", url: "https://www.clien.net/" },
+  { id: "1", title: "디시인사이드", url: "https://www.dcinside.com/" },
   { id: "5", title: "엠엘비파크", url: "https://mlbpark.donga.com/" },
   { id: "6", title: "더쿠", url: "https://theqoo.net/" },
   { id: "7", title: "보배드림", url: "https://www.bobaedream.co.kr/" },
   { id: "8", title: "블라인드", url: "https://www.teamblind.com/kr/" },
   { id: "9", title: "이토랜드", url: "https://www.etoland.co.kr/" },
-  { id: "10", title: "일베", url: "https://www.ilbe.com/" },
   { id: "11", title: "인스티즈", url: "https://www.instiz.net/" },
   { id: "12", title: "웃긴대학", url: "https://humoruniv.com/" },
   { id: "13", title: "네이트판", url: "https://m.pann.nate.com/" },
   { id: "14", title: "개드립", url: "https://www.dogdrip.net/" },
+  { id: "10", title: "일베", url: "https://www.ilbe.com/" },
   { id: "15", title: "아카라이브", url: "https://arca.live/" },
   { id: "16", title: "SLR클럽", url: "https://www.slrclub.com/" },
   { id: "17", title: "가생이닷컴", url: "http://www.gasengi.com/m" },
@@ -141,7 +141,7 @@ function SortableLinkBox({ id, title, url, size, columns }: {
     <div ref={setNodeRef} style={style} className="relative">
       <div {...attributes} {...listeners}
         className="absolute inset-0 z-10 cursor-grab active:cursor-grabbing rounded-xl touch-none" />
-      <LinkBox id={id} title={title} url={url} size={size} columns={columns} onDelete={() => {}} />
+      <LinkBox id={id} title={title} url={url} size={size} columns={columns} onDelete={() => { }} />
     </div>
   )
 }
@@ -150,7 +150,7 @@ function SortableLinkBox({ id, title, url, size, columns }: {
 function HomeContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  
+
   const [links, setLinks] = useState<Link[]>([])
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -198,7 +198,7 @@ function HomeContent() {
         setSettings(DEFAULT_SETTINGS)
       }
     }
-    
+
     setIsLoaded(true)
   }, [])
 
