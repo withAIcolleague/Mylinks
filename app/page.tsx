@@ -127,7 +127,7 @@ const LINKS_VERSION = "3"
 
 const DEFAULT_SETTINGS: Settings = {
   theme: "system",
-  columns: 3,
+  columns: 5,
   boxSize: "medium",
 }
 
