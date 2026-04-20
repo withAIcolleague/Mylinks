@@ -111,9 +111,19 @@ const DEFAULT_LINKS: Link[] = [
   { id: "82", title: "키보드랩", url: "https://kbdlab.co.kr/" },
   { id: "83", title: "보드나라", url: "https://www.bodnara.co.kr/" },
   { id: "84", title: "케이벤치", url: "http://www.kbench.com/" },
+  { id: "85", title: "파퓰러사이언스", url: "https://www.popsci.co.kr/" },
+  { id: "86", title: "사이언스타임즈", url: "https://www.sciencetimes.co.kr/" },
+  { id: "87", title: "동아사이언스", url: "https://www.dongascience.com/" },
+  { id: "88", title: "사이언스온", url: "https://scienceon.kisti.re.kr/" },
+  { id: "89", title: "YTN사이언스", url: "https://science.ytn.co.kr/" },
+  { id: "90", title: "헬로디디", url: "https://www.hellodd.com/" },
+  { id: "91", title: "BRIC", url: "https://www.ibric.org/" },
+  { id: "92", title: "MIT 테크리뷰", url: "https://www.technologyreview.kr/" },
+  { id: "93", title: "사이언스올", url: "https://www.scienceall.com/" },
+  { id: "94", title: "내셔널지오그래픽", url: "https://www.natgeokorea.com/" },
 ]
 
-const LINKS_VERSION = "2"
+const LINKS_VERSION = "3"
 
 const DEFAULT_SETTINGS: Settings = {
   theme: "system",
