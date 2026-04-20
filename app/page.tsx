@@ -2,7 +2,13 @@
 
 import { useState, useEffect, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { Trash2, X } from "lucide-react"
+import { Trash2, X, GripVertical } from "lucide-react"
+import {
+  DndContext, closestCenter, PointerSensor,
+  useSensor, useSensors, DragEndEvent,
+} from "@dnd-kit/core"
+import { SortableContext, useSortable, rectSortingStrategy, arrayMove } from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 import { LinkBox } from "@/components/link-box"
 import { AddLinkBox } from "@/components/add-link-box"
 import { AddLinkModal } from "@/components/add-link-modal"
@@ -115,6 +121,21 @@ const DEFAULT_SETTINGS: Settings = {
   boxSize: "medium",
 }
 
+function SortableLinkBox({ id, title, url, size, columns }: {
+  id: string; title: string; url: string
+  size: "small" | "medium" | "large"; columns: number
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }
+  return (
+    <div ref={setNodeRef} style={style} className="relative">
+      <div {...attributes} {...listeners}
+        className="absolute inset-0 z-10 cursor-grab active:cursor-grabbing rounded-xl touch-none" />
+      <LinkBox id={id} title={title} url={url} size={size} columns={columns} onDelete={() => {}} />
+    </div>
+  )
+}
+
 // useSearchParams를 사용하는 내부 컴포넌트 — Suspense로 감싸야 함
 function HomeContent() {
   const searchParams = useSearchParams()
@@ -129,8 +150,20 @@ function HomeContent() {
   const [quickAddTitle, setQuickAddTitle] = useState<string | null>(null)
   const [isSelectionMode, setIsSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [isEditLayoutMode, setIsEditLayoutMode] = useState(false)
 
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (over && active.id !== over.id) {
+      setLinks((prev) => {
+        const oldIndex = prev.findIndex((l) => l.id === active.id)
+        const newIndex = prev.findIndex((l) => l.id === over.id)
+        return arrayMove(prev, oldIndex, newIndex)
+      })
+    }
+  }
 
   useEffect(() => {
     const savedVersion = localStorage.getItem("my-links-version")
@@ -298,28 +331,53 @@ function HomeContent() {
   return (
     <main className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
-        <div className={`grid ${getGridClasses()} ${getGapClasses()} ${getBoxSizeClasses()}`}>
-          {!isSelectionMode && <AddLinkBox onClick={() => setIsModalOpen(true)} />}
+        {isEditLayoutMode ? (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={links.map((l) => l.id)} strategy={rectSortingStrategy}>
+              <div className={`grid ${getGridClasses()} ${getGapClasses()} ${getBoxSizeClasses()}`}>
+                {links.map((link) => (
+                  <SortableLinkBox key={link.id} id={link.id} title={link.title} url={link.url} size={settings.boxSize} columns={settings.columns} />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        ) : (
+          <div className={`grid ${getGridClasses()} ${getGapClasses()} ${getBoxSizeClasses()}`}>
+            {!isSelectionMode && <AddLinkBox onClick={() => setIsModalOpen(true)} />}
 
-          {links.map((link) => (
-            <LinkBox
-              key={link.id}
-              id={link.id}
-              title={link.title}
-              url={link.url}
-              onDelete={handleDeleteLink}
-              size={settings.boxSize}
-              columns={settings.columns}
-              isSelectionMode={isSelectionMode}
-              isSelected={selectedIds.includes(link.id)}
-              onLongPress={handleLongPress}
-              onSelect={handleSelect}
-            />
-          ))}
+            {links.map((link) => (
+              <LinkBox
+                key={link.id}
+                id={link.id}
+                title={link.title}
+                url={link.url}
+                onDelete={handleDeleteLink}
+                size={settings.boxSize}
+                columns={settings.columns}
+                isSelectionMode={isSelectionMode}
+                isSelected={selectedIds.includes(link.id)}
+                onLongPress={handleLongPress}
+                onSelect={handleSelect}
+              />
+            ))}
 
-          {!isSelectionMode && <SettingsBox onClick={() => setIsSettingsOpen(true)} />}
-        </div>
+            {!isSelectionMode && <SettingsBox onClick={() => setIsSettingsOpen(true)} />}
+          </div>
+        )}
       </div>
+
+      {isEditLayoutMode && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-card border border-border rounded-2xl shadow-2xl px-4 py-3">
+          <GripVertical className="w-4 h-4 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">드래그로 순서 변경</span>
+          <button
+            onClick={() => setIsEditLayoutMode(false)}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium"
+          >
+            완료
+          </button>
+        </div>
+      )}
 
       {isSelectionMode && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-card border border-border rounded-2xl shadow-2xl px-4 py-3">
@@ -363,6 +421,7 @@ function HomeContent() {
         onSettingsChange={setSettings}
         links={links}
         onDeleteLinks={handleDeleteLinks}
+        onEditLayout={() => { setIsSettingsOpen(false); setIsEditLayoutMode(true) }}
       />
     </main>
   )

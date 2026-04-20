@@ -1,6 +1,6 @@
 "use client"
 
-import { X, Sun, Moon, Monitor, Trash2, Check, Bookmark, Copy, CheckCircle } from "lucide-react"
+import { X, Sun, Moon, Monitor, Trash2, Check, Bookmark, Copy, CheckCircle, GripVertical } from "lucide-react"
 import { useEffect, useState } from "react"
 
 interface Link {
@@ -22,6 +22,7 @@ interface SettingsModalProps {
   onSettingsChange: (settings: Settings) => void
   links: Link[]
   onDeleteLinks: (ids: string[]) => void
+  onEditLayout?: () => void
 }
 
 export function SettingsModal({
@@ -31,6 +32,7 @@ export function SettingsModal({
   onSettingsChange,
   links,
   onDeleteLinks,
+  onEditLayout,
 }: SettingsModalProps) {
   const [selectedLinks, setSelectedLinks] = useState<string[]>([])
   const [activeTab, setActiveTab] = useState<"display" | "manage" | "bookmarklet">("display")
@@ -224,6 +226,21 @@ export function SettingsModal({
                   ))}
                 </div>
               </div>
+
+              {onEditLayout && (
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-3">
+                    박스 배치
+                  </label>
+                  <button
+                    onClick={onEditLayout}
+                    className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border bg-muted/50 text-foreground border-border hover:border-muted-foreground/50 transition-all text-sm font-medium"
+                  >
+                    <GripVertical className="w-4 h-4" />
+                    배치 편집 시작
+                  </button>
+                </div>
+              )}
             </div>
           ) : activeTab === "manage" ? (
             <div className="space-y-4">
