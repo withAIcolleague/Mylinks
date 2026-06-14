@@ -163,7 +163,7 @@ const DEFAULT_LINKS: Link[] = [
   { id: "133", title: "Visiting NYC", url: "https://www.reddit.com/r/visitingnyc/" },
 ]
 
-const LINKS_VERSION = "4"
+const LINKS_VERSION = "5"
 
 const DEFAULT_SETTINGS: Settings = {
   theme: "system",
