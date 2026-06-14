@@ -161,6 +161,7 @@ const DEFAULT_LINKS: Link[] = [
   { id: "131", title: "네이버", url: "https://www.naver.com/" },
   { id: "132", title: "다음", url: "https://www.daum.net/" },
   { id: "133", title: "Visiting NYC", url: "https://www.reddit.com/r/visitingnyc/" },
+  { id: "133", title: "FoodNYC", url: "https://www.reddit.com/r/FoodNYC/" },
 ]
 
 const LINKS_VERSION = "5"
