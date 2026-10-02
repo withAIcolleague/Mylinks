@@ -19,6 +19,7 @@ import {
   fetchRemoteState,
   saveRemoteLinks,
   saveRemoteTabs,
+  saveRemoteSettings,
   subscribeToRemoteChanges,
 } from "@/lib/db"
 
@@ -280,7 +281,7 @@ function HomeContent() {
     setIsLoaded(true)
 
     // Supabase 원격 동기화
-    fetchRemoteState().then(({ links: remoteLinks, tabs: remoteTabs }) => {
+    fetchRemoteState().then(({ links: remoteLinks, tabs: remoteTabs, settings: remoteSettings }) => {
       if (remoteLinks && remoteLinks.length > 0) {
         setLinks(remoteLinks)
         localStorage.setItem("my-links", JSON.stringify(remoteLinks))
@@ -296,6 +297,14 @@ function HomeContent() {
         // 최초 DB 생성 시 현재 기본 탭 저장
         saveRemoteTabs(loadedTabs)
       }
+
+      if (remoteSettings) {
+        setSettings(remoteSettings)
+        localStorage.setItem("my-links-settings", JSON.stringify(remoteSettings))
+      } else {
+        // 최초 DB 생성 시 현재 기본 설정 저장
+        saveRemoteSettings(loadedSettings)
+      }
     })
 
     // 실시간 동기화 구독
@@ -307,6 +316,10 @@ function HomeContent() {
       (newTabs) => {
         setTabs(newTabs)
         localStorage.setItem("my-links-tabs", JSON.stringify(newTabs))
+      },
+      (newSettings) => {
+        setSettings(newSettings)
+        localStorage.setItem("my-links-settings", JSON.stringify(newSettings))
       }
     )
 
@@ -336,6 +349,7 @@ function HomeContent() {
     } catch (e) {
       console.error("Failed to save settings to localStorage", e)
     }
+    saveRemoteSettings(newSettings)
   }
 
   const handleSelectTab = (tabId: string) => {
