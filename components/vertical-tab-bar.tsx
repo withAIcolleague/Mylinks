@@ -56,22 +56,22 @@ export function VerticalTabBar({
       {/* '전체' 인덱스 탭 */}
       <button
         onClick={() => onSelectTab("all")}
-        className={`group relative flex flex-col items-center justify-center py-3 px-1.5 sm:px-2 rounded-r-xl border-t border-r border-b transition-all text-xs cursor-pointer ${
+        className={`group relative flex flex-col items-center justify-center py-3.5 px-2 sm:px-2.5 rounded-r-xl border-t border-r border-b transition-all text-xs cursor-pointer ${
           activeTabId === "all"
-            ? "bg-card text-primary font-bold border-border shadow-md translate-x-1 z-20"
+            ? "bg-card text-primary font-bold border-border shadow-md translate-x-1.5 z-20"
             : "bg-muted/80 hover:bg-muted text-muted-foreground hover:text-foreground border-border/80 hover:translate-x-0.5"
         }`}
         title={`전체 (${totalCount}개)`}
       >
         <span
-          className="tracking-widest text-[11px] sm:text-xs font-semibold [writing-mode:vertical-rl] select-none"
+          className="tracking-widest text-xs sm:text-[13px] font-semibold [writing-mode:vertical-rl] select-none"
         >
           전체
         </span>
         <span
-          className={`mt-1.5 text-[9px] px-1 py-0.2 rounded-full font-mono ${
+          className={`mt-1.5 text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
             activeTabId === "all"
-              ? "bg-primary/10 text-primary"
+              ? "bg-primary/10 text-primary font-bold"
               : "bg-background/80 text-muted-foreground"
           }`}
         >
@@ -95,7 +95,7 @@ export function VerticalTabBar({
                 type="text"
                 value={editTabName}
                 onChange={(e) => setEditTabName(e.target.value)}
-                className="w-16 bg-input px-1 py-0.5 text-xs outline-none text-foreground border rounded"
+                className="w-20 bg-input px-1 py-0.5 text-xs outline-none text-foreground border rounded"
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleEditSubmit(tab.id)
@@ -125,24 +125,24 @@ export function VerticalTabBar({
             key={tab.id}
             className={`group relative flex flex-col items-center justify-center rounded-r-xl border-t border-r border-b transition-all ${
               isActive
-                ? "bg-card text-primary font-bold border-border shadow-md translate-x-1 z-20"
+                ? "bg-card text-primary font-bold border-border shadow-md translate-x-1.5 z-20"
                 : "bg-muted/80 hover:bg-muted text-muted-foreground hover:text-foreground border-border/80 hover:translate-x-0.5"
             }`}
           >
             <button
               onClick={() => onSelectTab(tab.id)}
-              className="flex flex-col items-center justify-center py-3 px-1.5 sm:px-2 w-full cursor-pointer"
+              className="flex flex-col items-center justify-center py-3.5 px-2 sm:px-2.5 w-full cursor-pointer"
               title={`${tab.name} (${count}개)`}
             >
               <span
-                className="tracking-widest text-[11px] sm:text-xs font-semibold [writing-mode:vertical-rl] select-none"
+                className="tracking-widest text-xs sm:text-[13px] font-semibold [writing-mode:vertical-rl] select-none"
               >
                 {tab.name}
               </span>
               <span
-                className={`mt-1.5 text-[9px] px-1 py-0.2 rounded-full font-mono ${
+                className={`mt-1.5 text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
                   isActive
-                    ? "bg-primary/10 text-primary"
+                    ? "bg-primary/10 text-primary font-bold"
                     : "bg-background/80 text-muted-foreground"
                 }`}
               >

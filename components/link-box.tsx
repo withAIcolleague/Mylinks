@@ -38,24 +38,24 @@ export function LinkBox({
 
   const getRowPadding = () => {
     return {
-      small: "py-0.5 px-2",
-      medium: "py-1 px-2.5",
-      large: "py-1.5 px-3",
-    }[size] ?? "py-1 px-2.5"
+      small: "py-1 px-2.5",
+      medium: "py-1.5 px-3",
+      large: "py-2 px-3.5",
+    }[size] ?? "py-1.5 px-3"
   }
 
   const getFaviconSize = () => {
     return {
-      small: "w-3.5 h-3.5",
-      medium: "w-4 h-4",
-      large: "w-5 h-5",
-    }[size] ?? "w-4 h-4"
+      small: "w-4 h-4",
+      medium: "w-5 h-5",
+      large: "w-6 h-6",
+    }[size] ?? "w-5 h-5"
   }
 
   const getTextSize = () => {
     return {
-      small: "text-xs",
-      medium: "text-[13px] sm:text-sm",
+      small: "text-xs sm:text-[13px]",
+      medium: "text-[13px] sm:text-sm md:text-[14px]",
       large: "text-sm sm:text-base",
     }[size] ?? "text-[13px] sm:text-sm"
   }
@@ -90,19 +90,19 @@ export function LinkBox({
 
   return (
     <div
-      className={`relative group rounded-md transition-all duration-100 select-none min-w-0
+      className={`relative group rounded-lg transition-all duration-100 select-none min-w-0
         ${isSelectionMode
           ? isSelected
             ? "bg-primary/15 ring-1 ring-primary"
             : "hover:bg-muted/40"
-          : "hover:bg-muted/60 active:bg-muted"
+          : "hover:bg-muted/70 active:bg-muted"
         }`}
     >
       <a
         href={isSelectionMode ? undefined : url}
         target="_blank"
         rel="noopener noreferrer"
-        className={`flex items-center gap-2 ${getRowPadding()} w-full min-w-0`}
+        className={`flex items-center gap-2.5 ${getRowPadding()} w-full min-w-0`}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
         onPointerMove={handlePointerMove}
@@ -135,9 +135,9 @@ export function LinkBox({
           )}
         </div>
 
-        {/* Post Style Title */}
+        {/* Post Style Title (2 Lines Allowed) */}
         <span
-          className={`${getTextSize()} font-normal text-foreground truncate min-w-0 flex-1 leading-snug group-hover:text-primary transition-colors`}
+          className={`${getTextSize()} font-normal text-foreground line-clamp-2 min-w-0 flex-1 leading-snug group-hover:text-primary transition-colors`}
         >
           {title}
         </span>

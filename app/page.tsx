@@ -13,8 +13,13 @@ import { LinkBox } from "@/components/link-box"
 import { AddLinkBox } from "@/components/add-link-box"
 import { AddLinkModal } from "@/components/add-link-modal"
 import { SettingsBox } from "@/components/settings-box"
-import { SettingsModal } from "@/components/settings-modal"
 import { VerticalTabBar, Tab } from "@/components/vertical-tab-bar"
+import {
+  fetchRemoteState,
+  saveRemoteLinks,
+  saveRemoteTabs,
+  subscribeToRemoteChanges,
+} from "@/lib/db"
 
 interface Link {
   id: string
@@ -272,6 +277,41 @@ function HomeContent() {
     setSettings(loadedSettings)
 
     setIsLoaded(true)
+
+    // Supabase 원격 동기화
+    fetchRemoteState().then(({ links: remoteLinks, tabs: remoteTabs }) => {
+      if (remoteLinks && remoteLinks.length > 0) {
+        setLinks(remoteLinks)
+        localStorage.setItem("my-links", JSON.stringify(remoteLinks))
+      } else {
+        // 최초 DB 생성 시 현재 기본 링크 저장
+        saveRemoteLinks(loadedLinks)
+      }
+
+      if (remoteTabs && remoteTabs.length > 0) {
+        setTabs(remoteTabs)
+        localStorage.setItem("my-links-tabs", JSON.stringify(remoteTabs))
+      } else {
+        // 최초 DB 생성 시 현재 기본 탭 저장
+        saveRemoteTabs(loadedTabs)
+      }
+    })
+
+    // 실시간 동기화 구독
+    const unsubscribe = subscribeToRemoteChanges(
+      (newLinks) => {
+        setLinks(newLinks)
+        localStorage.setItem("my-links", JSON.stringify(newLinks))
+      },
+      (newTabs) => {
+        setTabs(newTabs)
+        localStorage.setItem("my-links-tabs", JSON.stringify(newTabs))
+      }
+    )
+
+    return () => {
+      unsubscribe()
+    }
   }, [])
 
   // Handle quick add from bookmarklet
@@ -316,6 +356,7 @@ function HomeContent() {
     } catch (e) {
       console.error("Failed to save tabs", e)
     }
+    saveRemoteTabs(updated)
   }
 
   const handleEditTab = (tabId: string, newName: string) => {
@@ -326,6 +367,7 @@ function HomeContent() {
     } catch (e) {
       console.error("Failed to save tabs", e)
     }
+    saveRemoteTabs(updated)
   }
 
   const handleDeleteTab = (tabId: string) => {
@@ -343,6 +385,8 @@ function HomeContent() {
     } catch (e) {
       console.error("Failed to save tabs and links", e)
     }
+    saveRemoteTabs(updatedTabs)
+    saveRemoteLinks(updatedLinks)
   }
 
   useEffect(() => {
@@ -399,20 +443,13 @@ function HomeContent() {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
     if (over && active.id !== over.id) {
-      if (activeTabId === "all") {
-        setLinks((prev) => {
-          const oldIndex = prev.findIndex((l) => l.id === active.id)
-          const newIndex = prev.findIndex((l) => l.id === over.id)
-          return arrayMove(prev, oldIndex, newIndex)
-        })
-      } else {
-        // 특정 탭 내에서의 정렬
-        setLinks((prev) => {
-          const oldIndex = prev.findIndex((l) => l.id === active.id)
-          const newIndex = prev.findIndex((l) => l.id === over.id)
-          return arrayMove(prev, oldIndex, newIndex)
-        })
-      }
+      setLinks((prev) => {
+        const oldIndex = prev.findIndex((l) => l.id === active.id)
+        const newIndex = prev.findIndex((l) => l.id === over.id)
+        const updated = arrayMove(prev, oldIndex, newIndex)
+        saveRemoteLinks(updated)
+        return updated
+      })
     }
   }
 
@@ -424,15 +461,21 @@ function HomeContent() {
       url,
       tabId: targetTabId,
     }
-    setLinks((prev) => [...prev, newLink])
+    const updated = [...links, newLink]
+    setLinks(updated)
+    saveRemoteLinks(updated)
   }
 
   const handleDeleteLink = (id: string) => {
-    setLinks((prev) => prev.filter((link) => link.id !== id))
+    const updated = links.filter((link) => link.id !== id)
+    setLinks(updated)
+    saveRemoteLinks(updated)
   }
 
   const handleDeleteLinks = (ids: string[]) => {
-    setLinks((prev) => prev.filter((link) => !ids.includes(link.id)))
+    const updated = links.filter((link) => !ids.includes(link.id))
+    setLinks(updated)
+    saveRemoteLinks(updated)
   }
 
   const handleLongPress = (id: string) => {
@@ -470,9 +513,9 @@ function HomeContent() {
 
   const getGapClasses = () => {
     const gapClasses: Record<string, string> = {
-      small: "gap-x-3 gap-y-0.5 sm:gap-x-4",
-      medium: "gap-x-4 gap-y-0.5 sm:gap-x-5 sm:gap-y-1",
-      large: "gap-x-5 gap-y-1 sm:gap-x-6 sm:gap-y-1.5",
+      small: "gap-x-3 gap-y-1 sm:gap-x-4",
+      medium: "gap-x-4 gap-y-1 sm:gap-x-5 sm:gap-y-1.5",
+      large: "gap-x-5 gap-y-1.5 sm:gap-x-6 sm:gap-y-2",
     }
     return gapClasses[settings.boxSize] || gapClasses.medium
   }
