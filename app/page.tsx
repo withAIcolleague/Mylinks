@@ -15,6 +15,7 @@ import { AddLinkModal } from "@/components/add-link-modal"
 import { SettingsBox } from "@/components/settings-box"
 import { SettingsModal } from "@/components/settings-modal"
 import { VerticalTabBar, Tab } from "@/components/vertical-tab-bar"
+import { GoogleSearchBox } from "@/components/google-search-box"
 import {
   fetchRemoteState,
   saveRemoteLinks,
@@ -34,6 +35,7 @@ interface Settings {
   theme: "system" | "dark" | "light"
   columns: number
   boxSize: "small" | "medium" | "large"
+  tabPosition: "left" | "right"
 }
 
 export const DEFAULT_TABS: Tab[] = [
@@ -196,6 +198,7 @@ const DEFAULT_SETTINGS: Settings = {
   theme: "system",
   columns: 5,
   boxSize: "medium",
+  tabPosition: "right",
 }
 
 function SortableLinkBox({ id, title, url, size, columns }: {
@@ -271,7 +274,7 @@ function HomeContent() {
     let loadedSettings = DEFAULT_SETTINGS
     if (savedSettings) {
       try {
-        loadedSettings = JSON.parse(savedSettings)
+        loadedSettings = { ...DEFAULT_SETTINGS, ...JSON.parse(savedSettings) }
       } catch {
         loadedSettings = DEFAULT_SETTINGS
       }
@@ -299,8 +302,9 @@ function HomeContent() {
       }
 
       if (remoteSettings) {
-        setSettings(remoteSettings)
-        localStorage.setItem("my-links-settings", JSON.stringify(remoteSettings))
+        const mergedSettings = { ...DEFAULT_SETTINGS, ...remoteSettings }
+        setSettings(mergedSettings)
+        localStorage.setItem("my-links-settings", JSON.stringify(mergedSettings))
       } else {
         // 최초 DB 생성 시 현재 기본 설정 저장
         saveRemoteSettings(loadedSettings)
@@ -318,8 +322,9 @@ function HomeContent() {
         localStorage.setItem("my-links-tabs", JSON.stringify(newTabs))
       },
       (newSettings) => {
-        setSettings(newSettings)
-        localStorage.setItem("my-links-settings", JSON.stringify(newSettings))
+        const merged = { ...DEFAULT_SETTINGS, ...newSettings }
+        setSettings(merged)
+        localStorage.setItem("my-links-settings", JSON.stringify(merged))
       }
     )
 
@@ -372,6 +377,16 @@ function HomeContent() {
       console.error("Failed to save tabs", e)
     }
     saveRemoteTabs(updated)
+  }
+
+  const handleReorderTabs = (newTabs: Tab[]) => {
+    setTabs(newTabs)
+    try {
+      localStorage.setItem("my-links-tabs", JSON.stringify(newTabs))
+    } catch (e) {
+      console.error("Failed to save tabs", e)
+    }
+    saveRemoteTabs(newTabs)
   }
 
   const handleEditTab = (tabId: string, newName: string) => {
@@ -573,7 +588,10 @@ function HomeContent() {
 
   return (
     <main className="min-h-screen bg-background p-2 sm:p-4 md:p-6">
-      <div className="max-w-7xl mx-auto flex flex-row items-start">
+      <div className="max-w-7xl mx-auto">
+        <GoogleSearchBox />
+      </div>
+      <div className={`max-w-7xl mx-auto flex items-start ${settings.tabPosition === "left" ? "flex-row-reverse" : "flex-row"}`}>
         {/* 좌측 메인 본문 영역 (큰 직사각형 프레임) */}
         <div className="flex-1 min-w-0 bg-card/40 backdrop-blur-xs rounded-2xl sm:rounded-3xl border border-border p-3 sm:p-5 shadow-xs">
           {isEditLayoutMode ? (
@@ -619,6 +637,8 @@ function HomeContent() {
           onAddTab={handleAddTab}
           onEditTab={handleEditTab}
           onDeleteTab={handleDeleteTab}
+          onReorderTabs={handleReorderTabs}
+          position={settings.tabPosition}
           linkCounts={linkCounts}
           totalCount={links.length}
         />

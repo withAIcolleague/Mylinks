@@ -13,6 +13,7 @@ interface Settings {
   theme: "system" | "dark" | "light"
   columns: number
   boxSize: "small" | "medium" | "large"
+  tabPosition: "left" | "right"
 }
 
 interface SettingsModalProps {
@@ -222,6 +223,35 @@ export function SettingsModal({
                       }`}
                     >
                       {size.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-3">
+                  탭바 위치
+                </label>
+                <div className="flex gap-2">
+                  {[
+                    { value: "left", label: "왼쪽" },
+                    { value: "right", label: "오른쪽" },
+                  ].map((pos) => (
+                    <button
+                      key={pos.value}
+                      onClick={() =>
+                        onSettingsChange({
+                          ...settings,
+                          tabPosition: pos.value as "left" | "right",
+                        })
+                      }
+                      className={`flex-1 py-3 rounded-xl border transition-all text-sm font-medium ${
+                        settings.tabPosition === pos.value
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-muted/50 text-foreground border-border hover:border-muted-foreground/50"
+                      }`}
+                    >
+                      {pos.label}
                     </button>
                   ))}
                 </div>

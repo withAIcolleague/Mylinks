@@ -12,6 +12,7 @@ export interface Settings {
   theme: "system" | "dark" | "light"
   columns: number
   boxSize: "small" | "medium" | "large"
+  tabPosition?: "left" | "right"
 }
 
 const TABLE_NAME = "app_state"
