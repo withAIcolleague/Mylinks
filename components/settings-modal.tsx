@@ -199,7 +199,7 @@ export function SettingsModal({
 
               <div>
                 <label className="block text-sm font-medium text-foreground mb-3">
-                  박스 크기
+                  아이콘 크기
                 </label>
                 <div className="flex gap-2">
                   {[
@@ -230,14 +230,14 @@ export function SettingsModal({
               {onEditLayout && (
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-3">
-                    박스 배치
+                    링크 순서 배치
                   </label>
                   <button
                     onClick={onEditLayout}
                     className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border bg-muted/50 text-foreground border-border hover:border-muted-foreground/50 transition-all text-sm font-medium"
                   >
                     <GripVertical className="w-4 h-4" />
-                    배치 편집 시작
+                    순서 편집 시작
                   </button>
                 </div>
               )}

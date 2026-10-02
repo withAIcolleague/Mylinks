@@ -179,9 +179,9 @@ function SortableLinkBox({ id, title, url, size, columns }: {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }
   return (
-    <div ref={setNodeRef} style={style} className="relative">
+    <div ref={setNodeRef} style={style} className="relative min-w-0">
       <div {...attributes} {...listeners}
-        className="absolute inset-0 z-10 cursor-grab active:cursor-grabbing rounded-xl touch-none" />
+        className="absolute inset-0 z-10 cursor-grab active:cursor-grabbing rounded-md touch-none" />
       <LinkBox id={id} title={title} url={url} size={size} columns={columns} onDelete={() => { }} />
     </div>
   )
@@ -346,17 +346,17 @@ function HomeContent() {
 
   const getGapClasses = () => {
     const gapClasses: Record<string, string> = {
-      small: "gap-2 sm:gap-2.5",
-      medium: "gap-3 sm:gap-4",
-      large: "gap-4 sm:gap-5",
+      small: "gap-x-3 gap-y-0.5 sm:gap-x-4",
+      medium: "gap-x-4 gap-y-0.5 sm:gap-x-5 sm:gap-y-1",
+      large: "gap-x-5 gap-y-1 sm:gap-x-6 sm:gap-y-1.5",
     }
     return gapClasses[settings.boxSize] || gapClasses.medium
   }
 
   const getBoxSizeClasses = () => {
     const sizeClasses: Record<string, string> = {
-      small: "text-[10px] sm:text-xs",
-      medium: "",
+      small: "text-xs",
+      medium: "text-[13px] sm:text-sm",
       large: "text-sm sm:text-base",
     }
     return sizeClasses[settings.boxSize] || ""
@@ -364,14 +364,17 @@ function HomeContent() {
 
   if (!isLoaded) {
     return (
-      <main className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
+      <main className="min-h-screen bg-background p-3 sm:p-5 lg:p-6">
         <div className="max-w-7xl mx-auto">
           <div className={`grid ${getGridClasses()} ${getGapClasses()}`}>
-            {[...Array(9)].map((_, i) => (
+            {[...Array(24)].map((_, i) => (
               <div
                 key={i}
-                className="aspect-square bg-card rounded-xl border border-border animate-pulse"
-              />
+                className="flex items-center gap-2 py-1 px-2.5 animate-pulse"
+              >
+                <div className="w-4 h-4 rounded-xs bg-muted/60 shrink-0" />
+                <div className="h-3.5 bg-muted/40 rounded-sm w-3/4" />
+              </div>
             ))}
           </div>
         </div>
@@ -380,7 +383,7 @@ function HomeContent() {
   }
 
   return (
-    <main className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
+    <main className="min-h-screen bg-background p-3 sm:p-5 lg:p-6">
       <div className="max-w-7xl mx-auto">
         {isEditLayoutMode ? (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
