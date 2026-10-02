@@ -13,6 +13,7 @@ import { LinkBox } from "@/components/link-box"
 import { AddLinkBox } from "@/components/add-link-box"
 import { AddLinkModal } from "@/components/add-link-modal"
 import { SettingsBox } from "@/components/settings-box"
+import { SettingsModal } from "@/components/settings-modal"
 import { VerticalTabBar, Tab } from "@/components/vertical-tab-bar"
 import {
   fetchRemoteState,
