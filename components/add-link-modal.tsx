@@ -4,25 +4,38 @@ import { useState, useEffect } from "react"
 import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Tab } from "@/components/vertical-tab-bar"
 
 interface AddLinkModalProps {
   isOpen: boolean
   onClose: () => void
-  onAdd: (title: string, url: string) => void
+  onAdd: (title: string, url: string, tabId?: string) => void
   initialUrl?: string | null
   initialTitle?: string | null
+  tabs?: Tab[]
+  defaultTabId?: string
 }
 
-export function AddLinkModal({ isOpen, onClose, onAdd, initialUrl, initialTitle }: AddLinkModalProps) {
+export function AddLinkModal({
+  isOpen,
+  onClose,
+  onAdd,
+  initialUrl,
+  initialTitle,
+  tabs = [],
+  defaultTabId = "tab-community",
+}: AddLinkModalProps) {
   const [title, setTitle] = useState("")
   const [url, setUrl] = useState("")
+  const [selectedTabId, setSelectedTabId] = useState(defaultTabId === "all" ? (tabs[0]?.id || "tab-community") : defaultTabId)
 
   useEffect(() => {
     if (isOpen) {
       setTitle(initialTitle || "")
       setUrl(initialUrl || "")
+      setSelectedTabId(defaultTabId === "all" ? (tabs[0]?.id || "tab-community") : defaultTabId)
     }
-  }, [isOpen, initialUrl, initialTitle])
+  }, [isOpen, initialUrl, initialTitle, defaultTabId, tabs])
 
   if (!isOpen) return null
 
@@ -35,7 +48,7 @@ export function AddLinkModal({ isOpen, onClose, onAdd, initialUrl, initialTitle 
       formattedUrl = "https://" + formattedUrl
     }
 
-    onAdd(title.trim(), formattedUrl)
+    onAdd(title.trim(), formattedUrl, selectedTabId)
     setTitle("")
     setUrl("")
     onClose()
@@ -57,7 +70,7 @@ export function AddLinkModal({ isOpen, onClose, onAdd, initialUrl, initialTitle 
           <h2 className="text-lg font-semibold text-foreground">새 링크 추가</h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-md hover:bg-muted transition-colors"
+            className="p-1.5 rounded-md hover:bg-muted transition-colors cursor-pointer"
             aria-label="닫기"
           >
             <X className="w-5 h-5 text-muted-foreground" />
@@ -94,18 +107,38 @@ export function AddLinkModal({ isOpen, onClose, onAdd, initialUrl, initialTitle 
             />
           </div>
 
+          {tabs.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <label htmlFor="tab" className="text-sm font-medium text-foreground">
+                소속 탭
+              </label>
+              <select
+                id="tab"
+                value={selectedTabId}
+                onChange={(e) => setSelectedTabId(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg bg-input border border-border text-foreground text-sm outline-none focus:ring-2 focus:ring-primary"
+              >
+                {tabs.map((tab) => (
+                  <option key={tab.id} value={tab.id}>
+                    {tab.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div className="flex gap-3 mt-2">
             <Button
               type="button"
               variant="secondary"
-              className="flex-1"
+              className="flex-1 cursor-pointer"
               onClick={onClose}
             >
               취소
             </Button>
             <Button
               type="submit"
-              className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+              className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
               disabled={!title.trim() || !url.trim()}
             >
               추가
@@ -116,3 +149,4 @@ export function AddLinkModal({ isOpen, onClose, onAdd, initialUrl, initialTitle 
     </div>
   )
 }
+
