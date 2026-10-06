@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Edit2, Trash2, Check, X, GripVertical } from "lucide-react"
+import { Plus, Edit2, Copy, Trash2, Check, X } from "lucide-react"
 import {
   DndContext, closestCenter, PointerSensor,
   useSensor, useSensors, DragEndEvent,
@@ -24,6 +24,7 @@ interface VerticalTabBarProps {
   onAddTab: (name: string) => void
   onEditTab: (tabId: string, newName: string) => void
   onDeleteTab: (tabId: string) => void
+  onCopyTab?: (tabId: string) => void
   onReorderTabs?: (newTabs: Tab[]) => void
   linkCounts: Record<string, number>
   totalCount: number
@@ -42,6 +43,7 @@ function SortableIndexTab({
   onCancelEdit,
   onSaveEdit,
   onDeleteTab,
+  onCopyTab,
   canDelete,
   position,
 }: {
@@ -56,6 +58,7 @@ function SortableIndexTab({
   onCancelEdit: () => void
   onSaveEdit: (id: string) => void
   onDeleteTab: (id: string) => void
+  onCopyTab?: (id: string) => void
   canDelete: boolean
   position: "left" | "right"
 }) {
@@ -162,6 +165,18 @@ function SortableIndexTab({
         >
           <Edit2 className="w-3 h-3" />
         </button>
+        {onCopyTab && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onCopyTab(tab.id)
+            }}
+            className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
+            title="탭 복사"
+          >
+            <Copy className="w-3 h-3" />
+          </button>
+        )}
         {canDelete && (
           <button
             onClick={(e) => {
@@ -188,6 +203,7 @@ export function VerticalTabBar({
   onAddTab,
   onEditTab,
   onDeleteTab,
+  onCopyTab,
   onReorderTabs,
   linkCounts,
   totalCount,
@@ -241,32 +257,6 @@ export function VerticalTabBar({
 
   return (
     <div className={`flex flex-col gap-1.5 shrink-0 select-none z-10 pt-2 ${marginOverlap}`}>
-      {/* '전체' 인덱스 탭 (고정) */}
-      <button
-        onClick={() => onSelectTab("all")}
-        className={`group relative flex flex-col items-center justify-center py-3.5 px-2 sm:px-2.5 ${roundedSide} ${borderSides} transition-all text-xs cursor-pointer ${
-          activeTabId === "all"
-            ? `bg-card text-primary font-bold border-border shadow-md ${activeTranslate} z-20`
-            : `bg-muted/80 hover:bg-muted text-muted-foreground hover:text-foreground border-border/80 ${hoverTranslate}`
-        }`}
-        title={`전체 (${totalCount}개)`}
-      >
-        <span
-          className="tracking-widest text-xs sm:text-[13px] font-semibold [writing-mode:vertical-rl] select-none"
-        >
-          전체
-        </span>
-        <span
-          className={`mt-1.5 text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-            activeTabId === "all"
-              ? "bg-primary/10 text-primary font-bold"
-              : "bg-background/80 text-muted-foreground"
-          }`}
-        >
-          {totalCount}
-        </span>
-      </button>
-
       {/* 세로 인덱스 탭 목록 (드래그로 순서 변경 가능) */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={tabs.map((t) => t.id)} strategy={verticalListSortingStrategy}>
@@ -288,6 +278,7 @@ export function VerticalTabBar({
                 onCancelEdit={() => setEditingTabId(null)}
                 onSaveEdit={handleEditSubmit}
                 onDeleteTab={onDeleteTab}
+                onCopyTab={onCopyTab}
                 canDelete={tabs.length > 1}
                 position={position}
               />
@@ -338,6 +329,32 @@ export function VerticalTabBar({
           <Plus className="w-3.5 h-3.5" />
         </button>
       )}
+
+      {/* '전체' 인덱스 탭 (항상 맨 아래 고정) */}
+      <button
+        onClick={() => onSelectTab("all")}
+        className={`group relative flex flex-col items-center justify-center py-3.5 px-2 sm:px-2.5 ${roundedSide} ${borderSides} transition-all text-xs cursor-pointer ${
+          activeTabId === "all"
+            ? `bg-card text-primary font-bold border-border shadow-md ${activeTranslate} z-20`
+            : `bg-muted/80 hover:bg-muted text-muted-foreground hover:text-foreground border-border/80 ${hoverTranslate}`
+        }`}
+        title={`전체 (${totalCount}개)`}
+      >
+        <span
+          className="tracking-widest text-xs sm:text-[13px] font-semibold [writing-mode:vertical-rl] select-none"
+        >
+          전체
+        </span>
+        <span
+          className={`mt-1.5 text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+            activeTabId === "all"
+              ? "bg-primary/10 text-primary font-bold"
+              : "bg-background/80 text-muted-foreground"
+          }`}
+        >
+          {totalCount}
+        </span>
+      </button>
     </div>
   )
 }

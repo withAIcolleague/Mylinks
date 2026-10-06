@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense, useMemo } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { Trash2, X, GripVertical } from "lucide-react"
+import { Trash2, X, GripVertical, FolderInput } from "lucide-react"
 import {
   DndContext, closestCenter, PointerSensor,
   useSensor, useSensors, DragEndEvent,
@@ -16,6 +16,9 @@ import { SettingsBox } from "@/components/settings-box"
 import { SettingsModal } from "@/components/settings-modal"
 import { VerticalTabBar, Tab } from "@/components/vertical-tab-bar"
 import { GoogleSearchBox } from "@/components/google-search-box"
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   fetchRemoteState,
   saveRemoteLinks,
@@ -400,6 +403,24 @@ function HomeContent() {
     saveRemoteTabs(updated)
   }
 
+  const handleCopyTab = (tabId: string) => {
+    const source = tabs.find((t) => t.id === tabId)
+    if (!source) return
+    const stamp = Date.now()
+    const newTab: Tab = { ...source, id: `tab-${stamp}`, name: `${source.name} 복사` }
+    const index = tabs.findIndex((t) => t.id === tabId)
+    const updatedTabs = [...tabs.slice(0, index + 1), newTab, ...tabs.slice(index + 1)]
+    const copiedLinks = links
+      .filter((l) => (l.tabId || "tab-community") === tabId)
+      .map((l, i) => ({ ...l, id: `${stamp}-${i}`, tabId: newTab.id }))
+    const updatedLinks = [...links, ...copiedLinks]
+    setTabs(updatedTabs)
+    setLinks(updatedLinks)
+    handleSelectTab(newTab.id)
+    saveRemoteTabs(updatedTabs)
+    saveRemoteLinks(updatedLinks)
+  }
+
   const handleDeleteTab = (tabId: string) => {
     const fallbackTabId = tabs.find((t) => t.id !== tabId)?.id || "tab-community"
     const updatedTabs = tabs.filter((t) => t.id !== tabId)
@@ -508,7 +529,19 @@ function HomeContent() {
     saveRemoteLinks(updated)
   }
 
-  const handleLongPress = (id: string) => {
+  const handleRenameLink = (id: string, title: string) => {
+    const updated = links.map((link) => (link.id === id ? { ...link, title } : link))
+    setLinks(updated)
+    saveRemoteLinks(updated)
+  }
+
+  const handleMoveLinks = (ids: string[], tabId: string) => {
+    const updated = links.map((link) => (ids.includes(link.id) ? { ...link, tabId } : link))
+    setLinks(updated)
+    saveRemoteLinks(updated)
+  }
+
+  const handleStartSelect = (id: string) => {
     setIsSelectionMode(true)
     setSelectedIds([id])
   }
@@ -521,6 +554,12 @@ function HomeContent() {
 
   const handleSelectionDelete = () => {
     handleDeleteLinks(selectedIds)
+    setIsSelectionMode(false)
+    setSelectedIds([])
+  }
+
+  const handleSelectionMove = (tabId: string) => {
+    handleMoveLinks(selectedIds, tabId)
     setIsSelectionMode(false)
     setSelectedIds([])
   }
@@ -614,12 +653,17 @@ function HomeContent() {
                   id={link.id}
                   title={link.title}
                   url={link.url}
+                  tabId={link.tabId || "tab-community"}
+                  tabs={tabs}
                   onDelete={handleDeleteLink}
+                  onRename={handleRenameLink}
+                  onMove={(id, tabId) => handleMoveLinks([id], tabId)}
+                  onReorder={() => setIsEditLayoutMode(true)}
+                  onStartSelect={handleStartSelect}
                   size={settings.boxSize}
                   columns={settings.columns}
                   isSelectionMode={isSelectionMode}
                   isSelected={selectedIds.includes(link.id)}
-                  onLongPress={handleLongPress}
                   onSelect={handleSelect}
                 />
               ))}
@@ -637,6 +681,7 @@ function HomeContent() {
           onAddTab={handleAddTab}
           onEditTab={handleEditTab}
           onDeleteTab={handleDeleteTab}
+          onCopyTab={handleCopyTab}
           onReorderTabs={handleReorderTabs}
           position={settings.tabPosition}
           linkCounts={linkCounts}
@@ -670,6 +715,24 @@ function HomeContent() {
             <Trash2 className="w-4 h-4" />
             삭제
           </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                disabled={selectedIds.length === 0}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium disabled:opacity-40 transition-opacity cursor-pointer"
+              >
+                <FolderInput className="w-4 h-4" />
+                이동
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="top" align="center">
+              {tabs.map((tab) => (
+                <DropdownMenuItem key={tab.id} onSelect={() => handleSelectionMove(tab.id)}>
+                  {tab.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <button
             onClick={handleCancelSelection}
             className="flex items-center gap-2 px-4 py-2 bg-muted text-foreground rounded-xl text-sm font-medium transition-colors hover:bg-muted/80 cursor-pointer"
@@ -699,9 +762,6 @@ function HomeContent() {
         onClose={() => setIsSettingsOpen(false)}
         settings={settings}
         onSettingsChange={handleSettingsChange}
-        links={links}
-        onDeleteLinks={handleDeleteLinks}
-        onEditLayout={() => { setIsSettingsOpen(false); setIsEditLayoutMode(true) }}
       />
     </main>
   )
