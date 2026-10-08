@@ -25,177 +25,27 @@ import {
   saveRemoteTabs,
   saveRemoteSettings,
   subscribeToRemoteChanges,
+  type Link,
+  type Settings,
 } from "@/lib/db"
 
-interface Link {
-  id: string
-  title: string
-  url: string
-  tabId?: string
+// localStorage는 Supabase 조회 실패 시의 오프라인 캐시로만 사용
+function readCache<T>(key: string): T | null {
+  try {
+    const raw = localStorage.getItem(key)
+    return raw ? (JSON.parse(raw) as T) : null
+  } catch {
+    return null
+  }
 }
 
-interface Settings {
-  theme: "system" | "dark" | "light"
-  columns: number
-  boxSize: "small" | "medium" | "large"
-  tabPosition: "left" | "right"
+function writeCache(key: string, value: unknown) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value))
+  } catch (e) {
+    console.error(`Failed to cache ${key}`, e)
+  }
 }
-
-export const DEFAULT_TABS: Tab[] = [
-  { id: "tab-community", name: "커뮤니티" },
-  { id: "tab-ai-tech", name: "AI & IT뉴스" },
-  { id: "tab-game-hw", name: "게임 & 하드웨어" },
-  { id: "tab-sci-reddit", name: "과학 & 레딧" },
-  { id: "tab-services", name: "AI 서비스 & 포털" },
-]
-
-const DEFAULT_LINKS: Link[] = [
-  // 커뮤니티 (1 ~ 28)
-  { id: "1", title: "뽐뿌", url: "https://www.ppomppu.co.kr/", tabId: "tab-community" },
-  { id: "2", title: "에펨코리아", url: "https://www.fmkorea.com/", tabId: "tab-community" },
-  { id: "3", title: "클리앙", url: "https://www.clien.net/", tabId: "tab-community" },
-  { id: "4", title: "디시인사이드", url: "https://www.dcinside.com/", tabId: "tab-community" },
-  { id: "5", title: "엠엘비파크", url: "https://mlbpark.donga.com/", tabId: "tab-community" },
-  { id: "6", title: "더쿠", url: "https://theqoo.net/", tabId: "tab-community" },
-  { id: "7", title: "보배드림", url: "https://www.bobaedream.co.kr/", tabId: "tab-community" },
-  { id: "8", title: "블라인드", url: "https://www.teamblind.com/kr/", tabId: "tab-community" },
-  { id: "9", title: "이토랜드", url: "https://www.etoland.co.kr/", tabId: "tab-community" },
-  { id: "10", title: "인스티즈", url: "https://www.instiz.net/", tabId: "tab-community" },
-  { id: "11", title: "웃긴대학", url: "https://humoruniv.com/", tabId: "tab-community" },
-  { id: "12", title: "네이트판", url: "https://m.pann.nate.com/", tabId: "tab-community" },
-  { id: "13", title: "개드립", url: "https://www.dogdrip.net/", tabId: "tab-community" },
-  { id: "14", title: "일베", url: "https://www.ilbe.com/", tabId: "tab-community" },
-  { id: "15", title: "아카라이브", url: "https://arca.live/", tabId: "tab-community" },
-  { id: "16", title: "SLR클럽", url: "https://www.slrclub.com/", tabId: "tab-community" },
-  { id: "17", title: "가생이닷컴", url: "http://www.gasengi.com/m", tabId: "tab-community" },
-  { id: "18", title: "루리웹", url: "https://www.ruliweb.com/", tabId: "tab-community" },
-  { id: "19", title: "오늘의유머", url: "https://www.todayhumor.co.kr/", tabId: "tab-community" },
-  { id: "20", title: "와이고수", url: "https://www.ygosu.com/", tabId: "tab-community" },
-  { id: "21", title: "82쿡", url: "https://www.82cook.com/", tabId: "tab-community" },
-  { id: "22", title: "다모앙", url: "https://damoang.net/", tabId: "tab-community" },
-  { id: "23", title: "인벤", url: "https://www.inven.co.kr/", tabId: "tab-community" },
-  { id: "24", title: "딴지일보", url: "https://www.ddanzi.com/", tabId: "tab-community" },
-  { id: "25", title: "디미토리", url: "https://www.dmitory.com/", tabId: "tab-community" },
-  { id: "26", title: "해연갤", url: "https://hygall.com/", tabId: "tab-community" },
-  { id: "27", title: "DVD프라임", url: "https://dvdprime.com/", tabId: "tab-community" },
-  { id: "28", title: "스레딕", url: "https://thredic.com/", tabId: "tab-community" },
-
-  // AI & IT뉴스 (29 ~ 61)
-  { id: "29", title: "AI타임스", url: "https://www.aitimes.com/", tabId: "tab-ai-tech" },
-  { id: "30", title: "인공지능신문", url: "https://www.aitimes.kr/", tabId: "tab-ai-tech" },
-  { id: "31", title: "더에이아이", url: "https://www.newstheai.com/", tabId: "tab-ai-tech" },
-  { id: "32", title: "AI포스트", url: "https://www.aipostkorea.com/", tabId: "tab-ai-tech" },
-  { id: "33", title: "로봇신문", url: "https://www.irobotnews.com/", tabId: "tab-ai-tech" },
-  { id: "34", title: "AI매터스", url: "https://aimatters.co.kr/", tabId: "tab-ai-tech" },
-  { id: "35", title: "AI News", url: "https://www.artificialintelligence-news.com/", tabId: "tab-ai-tech" },
-  { id: "36", title: "AI Magazine", url: "https://aimagazine.com/", tabId: "tab-ai-tech" },
-  { id: "37", title: "MIT AI", url: "https://news.mit.edu/topic/artificial-intelligence2", tabId: "tab-ai-tech" },
-  { id: "38", title: "VentureBeat", url: "https://venturebeat.com/", tabId: "tab-ai-tech" },
-  { id: "39", title: "지디넷", url: "https://zdnet.co.kr/", tabId: "tab-ai-tech" },
-  { id: "40", title: "IT World", url: "https://www.itworld.co.kr/", tabId: "tab-ai-tech" },
-  { id: "41", title: "디지털데일리", url: "http://www.ddaily.co.kr/", tabId: "tab-ai-tech" },
-  { id: "42", title: "씨넷코리아", url: "https://www.cnet.co.kr/", tabId: "tab-ai-tech" },
-  { id: "43", title: "테크월드뉴스", url: "https://www.epnc.co.kr/", tabId: "tab-ai-tech" },
-  { id: "44", title: "CIO코리아", url: "https://www.cio.com/kr/", tabId: "tab-ai-tech" },
-  { id: "45", title: "디일렉", url: "https://www.thelec.kr/", tabId: "tab-ai-tech" },
-  { id: "46", title: "전자신문", url: "https://www.etnews.com/", tabId: "tab-ai-tech" },
-  { id: "47", title: "IT비즈뉴스", url: "https://www.itbiznews.com/", tabId: "tab-ai-tech" },
-  { id: "48", title: "더테크", url: "https://www.the-tech.co.kr/", tabId: "tab-ai-tech" },
-  { id: "49", title: "테크레시피", url: "https://techrecipe.co.kr/", tabId: "tab-ai-tech" },
-  { id: "50", title: "아이티데일리", url: "https://www.itdaily.kr/", tabId: "tab-ai-tech" },
-  { id: "51", title: "테크M", url: "https://www.techm.kr/", tabId: "tab-ai-tech" },
-  { id: "52", title: "아웃스탠딩", url: "https://outstanding.kr/", tabId: "tab-ai-tech" },
-  { id: "53", title: "컴퓨터월드", url: "http://www.comworld.co.kr/", tabId: "tab-ai-tech" },
-  { id: "54", title: "플래텀", url: "https://platum.kr/", tabId: "tab-ai-tech" },
-  { id: "55", title: "테크데일리", url: "http://www.techdaily.co.kr/", tabId: "tab-ai-tech" },
-  { id: "56", title: "벤처스퀘어", url: "https://www.venturesquare.net/", tabId: "tab-ai-tech" },
-  { id: "57", title: "보안뉴스", url: "https://m.boannews.com/", tabId: "tab-ai-tech" },
-  { id: "58", title: "IT조선", url: "http://it.chosun.com/", tabId: "tab-ai-tech" },
-  { id: "59", title: "IT동아", url: "https://it.donga.com/", tabId: "tab-ai-tech" },
-  { id: "60", title: "베타뉴스", url: "http://www.betanews.net/", tabId: "tab-ai-tech" },
-  { id: "61", title: "데이터넷", url: "http://www.datanet.co.kr/", tabId: "tab-ai-tech" },
-
-  // 게임 & 하드웨어 (62 ~ 83)
-  { id: "62", title: "디스이즈게임", url: "https://www.thisisgame.com/", tabId: "tab-game-hw" },
-  { id: "63", title: "데일리게임", url: "https://www.dailygame.co.kr/", tabId: "tab-game-hw" },
-  { id: "64", title: "게임포커스", url: "https://gamefocus.co.kr/", tabId: "tab-game-hw" },
-  { id: "65", title: "퀘이사플레이", url: "https://quasarplay.com/", tabId: "tab-game-hw" },
-  { id: "66", title: "플레이포럼", url: "https://www.playforum.net/", tabId: "tab-game-hw" },
-  { id: "67", title: "게임메카", url: "https://www.gamemeca.com/", tabId: "tab-game-hw" },
-  { id: "68", title: "게임톡", url: "https://www.gametoc.co.kr/", tabId: "tab-game-hw" },
-  { id: "69", title: "인디게임닷컴", url: "https://indiegame.com/", tabId: "tab-game-hw" },
-  { id: "70", title: "헝그리앱", url: "http://www.hungryapp.co.kr/", tabId: "tab-game-hw" },
-  { id: "71", title: "게임인사이트", url: "http://www.gameinsight.co.kr/", tabId: "tab-game-hw" },
-  { id: "72", title: "게임와이", url: "http://www.gamey.kr/", tabId: "tab-game-hw" },
-  { id: "73", title: "경향게임스", url: "http://www.khgames.co.kr/", tabId: "tab-game-hw" },
-  { id: "74", title: "게임샷", url: "http://www.gameshot.net/", tabId: "tab-game-hw" },
-  { id: "75", title: "게임조선", url: "https://m.gamechosun.co.kr/", tabId: "tab-game-hw" },
-  { id: "76", title: "쿨엔조이", url: "https://coolenjoy.net/", tabId: "tab-game-hw" },
-  { id: "77", title: "퀘이사존", url: "https://quasarzone.com/", tabId: "tab-game-hw" },
-  { id: "78", title: "기글하드웨어", url: "https://gigglehd.com/", tabId: "tab-game-hw" },
-  { id: "79", title: "2CPU", url: "https://www.2cpu.co.kr/", tabId: "tab-game-hw" },
-  { id: "80", title: "하드웨어배틀", url: "http://www.hwbattle.com/", tabId: "tab-game-hw" },
-  { id: "81", title: "키보드랩", url: "https://kbdlab.co.kr/", tabId: "tab-game-hw" },
-  { id: "82", title: "보드나라", url: "https://www.bodnara.co.kr/", tabId: "tab-game-hw" },
-  { id: "83", title: "케이벤치", url: "http://www.kbench.com/", tabId: "tab-game-hw" },
-
-  // 과학 & 레딧 (84 ~ 108)
-  { id: "84", title: "파퓰러사이언스", url: "https://www.popsci.co.kr/", tabId: "tab-sci-reddit" },
-  { id: "85", title: "사이언스타임즈", url: "https://www.sciencetimes.co.kr/", tabId: "tab-sci-reddit" },
-  { id: "86", title: "동아사이언스", url: "https://www.dongascience.com/", tabId: "tab-sci-reddit" },
-  { id: "87", title: "사이언스온", url: "https://scienceon.kisti.re.kr/", tabId: "tab-sci-reddit" },
-  { id: "88", title: "YTN사이언스", url: "https://science.ytn.co.kr/", tabId: "tab-sci-reddit" },
-  { id: "89", title: "헬로디디", url: "https://www.hellodd.com/", tabId: "tab-sci-reddit" },
-  { id: "90", title: "BRIC", url: "https://www.ibric.org/", tabId: "tab-sci-reddit" },
-  { id: "91", title: "MIT 테크리뷰", url: "https://www.technologyreview.kr/", tabId: "tab-sci-reddit" },
-  { id: "92", title: "사이언스올", url: "https://www.scienceall.com/", tabId: "tab-sci-reddit" },
-  { id: "93", title: "내셔널지오그래픽", url: "https://www.natgeokorea.com/", tabId: "tab-sci-reddit" },
-  { id: "94", title: "MicrosoftFlightSim", url: "https://www.reddit.com/r/MicrosoftFlightSim/", tabId: "tab-sci-reddit" },
-  { id: "95", title: "ClaudeAI", url: "https://www.reddit.com/r/ClaudeAI/", tabId: "tab-sci-reddit" },
-  { id: "96", title: "ClaudeCode", url: "https://www.reddit.com/r/ClaudeCode/", tabId: "tab-sci-reddit" },
-  { id: "97", title: "ChatGPT", url: "https://www.reddit.com/r/ChatGPT/", tabId: "tab-sci-reddit" },
-  { id: "98", title: "GeminiAI", url: "https://www.reddit.com/r/GeminiAI/", tabId: "tab-sci-reddit" },
-  { id: "99", title: "LocalLLM", url: "https://www.reddit.com/r/LocalLLM/", tabId: "tab-sci-reddit" },
-  { id: "100", title: "PcBuild", url: "https://www.reddit.com/r/PcBuild/", tabId: "tab-sci-reddit" },
-  { id: "101", title: "pcmasterrace", url: "https://www.reddit.com/r/pcmasterrace/", tabId: "tab-sci-reddit" },
-  { id: "102", title: "science", url: "https://www.reddit.com/r/science/", tabId: "tab-sci-reddit" },
-  { id: "103", title: "worldnews", url: "https://www.reddit.com/r/worldnews/", tabId: "tab-sci-reddit" },
-  { id: "104", title: "singularity", url: "https://www.reddit.com/r/singularity/", tabId: "tab-sci-reddit" },
-  { id: "105", title: "technology", url: "https://www.reddit.com/r/technology/", tabId: "tab-sci-reddit" },
-  { id: "106", title: "wallstreetbets", url: "https://www.reddit.com/r/wallstreetbets/", tabId: "tab-sci-reddit" },
-  { id: "107", title: "PiratedGames", url: "https://www.reddit.com/r/PiratedGames/", tabId: "tab-sci-reddit" },
-  { id: "108", title: "Living_in_Korea", url: "https://www.reddit.com/r/Living_in_Korea/", tabId: "tab-sci-reddit" },
-  { id: "133_1", title: "Visiting NYC", url: "https://www.reddit.com/r/visitingnyc/", tabId: "tab-sci-reddit" },
-  { id: "133_2", title: "FoodNYC", url: "https://www.reddit.com/r/FoodNYC/", tabId: "tab-sci-reddit" },
-
-  // AI 서비스 & 포털 (109 ~ 132)
-  { id: "109", title: "ChatGPT", url: "https://chatgpt.com/", tabId: "tab-services" },
-  { id: "110", title: "Claude", url: "https://claude.ai/", tabId: "tab-services" },
-  { id: "111", title: "Grok", url: "https://grok.com/", tabId: "tab-services" },
-  { id: "112", title: "Vercel", url: "https://vercel.com/dongyoungkims-projects", tabId: "tab-services" },
-  { id: "113", title: "v0 by Vercel", url: "https://v0.app/", tabId: "tab-services" },
-  { id: "114", title: "Gemini", url: "https://gemini.google.com/app", tabId: "tab-services" },
-  { id: "115", title: "Manus", url: "https://manus.im/", tabId: "tab-services" },
-  { id: "116", title: "젠스파크", url: "https://www.genspark.ai/agents?type=moa_chat", tabId: "tab-services" },
-  { id: "117", title: "Perplexity", url: "https://www.perplexity.ai/", tabId: "tab-services" },
-  { id: "118", title: "라이너", url: "https://getliner.com/ko", tabId: "tab-services" },
-  { id: "119", title: "Copilot", url: "https://copilot.microsoft.com/chats/mryYMXi2E2ScnBvwuxQ4z", tabId: "tab-services" },
-  { id: "120", title: "CLOVA X", url: "https://clova-x.naver.com/", tabId: "tab-services" },
-  { id: "121", title: "에이닷", url: "https://adot.ai/multillm", tabId: "tab-services" },
-  { id: "122", title: "Meta AI", url: "https://www.meta.ai/?utm_source=llama_meta_site&utm_medium=organic_social&utm_content=web_footer&utm_campaign=MetaAI", tabId: "tab-services" },
-  { id: "123", title: "DeepSeek", url: "https://www.deepseek.com/", tabId: "tab-services" },
-  { id: "124", title: "Hugging Face", url: "https://huggingface.co/", tabId: "tab-services" },
-  { id: "125", title: "Cursor", url: "https://cursor.com/agents", tabId: "tab-services" },
-  { id: "126", title: "Z.ai", url: "https://z.ai/chat", tabId: "tab-services" },
-  { id: "127", title: "Replit", url: "https://replit.com/", tabId: "tab-services" },
-  { id: "128", title: "안동뉴스", url: "https://www.adns.kr/", tabId: "tab-services" },
-  { id: "129", title: "안동데일리", url: "https://www.andongdaily.com/", tabId: "tab-services" },
-  { id: "130", title: "안동인터넷뉴스", url: "http://www.adinews.co.kr/", tabId: "tab-services" },
-  { id: "131", title: "네이버", url: "https://www.naver.com/", tabId: "tab-services" },
-  { id: "132", title: "다음", url: "https://www.daum.net/", tabId: "tab-services" },
-]
-
-const LINKS_VERSION = "6"
 
 const DEFAULT_SETTINGS: Settings = {
   theme: "system",
@@ -225,7 +75,7 @@ function HomeContent() {
   const router = useRouter()
 
   const [links, setLinks] = useState<Link[]>([])
-  const [tabs, setTabs] = useState<Tab[]>(DEFAULT_TABS)
+  const [tabs, setTabs] = useState<Tab[]>([])
   const [activeTabId, setActiveTabId] = useState<string>("all")
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -240,98 +90,48 @@ function HomeContent() {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
   useEffect(() => {
-    const savedVersion = localStorage.getItem("my-links-version")
-    const savedLinks = localStorage.getItem("my-links")
-    const savedTabs = localStorage.getItem("my-links-tabs")
-    const savedActiveTab = localStorage.getItem("my-links-active-tab")
-    const savedSettings = localStorage.getItem("my-links-settings")
+    let cancelled = false
 
-    let loadedTabs = DEFAULT_TABS
-    if (savedTabs) {
-      try {
-        loadedTabs = JSON.parse(savedTabs)
-      } catch {
-        loadedTabs = DEFAULT_TABS
-      }
-    }
-    setTabs(loadedTabs)
+    try {
+      const savedActiveTab = localStorage.getItem("my-links-active-tab")
+      if (savedActiveTab) setActiveTabId(savedActiveTab)
+    } catch { }
 
-    if (savedActiveTab) {
-      setActiveTabId(savedActiveTab)
-    }
+    // Supabase가 원본. 응답(또는 실패)을 받은 뒤에만 화면을 열어
+    // 오래된 데이터 위에서 편집이 일어나지 않도록 함
+    fetchRemoteState().then((remote) => {
+      if (cancelled) return
 
-    let loadedLinks = DEFAULT_LINKS
-    if (savedLinks && savedVersion === LINKS_VERSION) {
-      try {
-        loadedLinks = JSON.parse(savedLinks)
-      } catch {
-        loadedLinks = DEFAULT_LINKS
-      }
-    } else {
-      localStorage.setItem("my-links-version", LINKS_VERSION)
-      localStorage.setItem("my-links", JSON.stringify(DEFAULT_LINKS))
-      localStorage.setItem("my-links-tabs", JSON.stringify(DEFAULT_TABS))
-    }
-    setLinks(loadedLinks)
-
-    let loadedSettings = DEFAULT_SETTINGS
-    if (savedSettings) {
-      try {
-        loadedSettings = { ...DEFAULT_SETTINGS, ...JSON.parse(savedSettings) }
-      } catch {
-        loadedSettings = DEFAULT_SETTINGS
-      }
-    }
-    setSettings(loadedSettings)
-
-    setIsLoaded(true)
-
-    // Supabase 원격 동기화
-    fetchRemoteState().then(({ links: remoteLinks, tabs: remoteTabs, settings: remoteSettings }) => {
-      if (remoteLinks && remoteLinks.length > 0) {
-        setLinks(remoteLinks)
-        localStorage.setItem("my-links", JSON.stringify(remoteLinks))
+      if (remote.ok) {
+        const nextLinks = remote.links ?? []
+        const nextTabs = remote.tabs ?? []
+        const nextSettings = { ...DEFAULT_SETTINGS, ...remote.settings }
+        setLinks(nextLinks)
+        setTabs(nextTabs)
+        setSettings(nextSettings)
+        writeCache("my-links-settings", nextSettings)
       } else {
-        // 최초 DB 생성 시 현재 기본 링크 저장
-        saveRemoteLinks(loadedLinks)
+        // 조회 실패: 캐시로 표시만 하고 원격에는 아무것도 쓰지 않음
+        setLinks(readCache<Link[]>("my-links") ?? [])
+        setTabs(readCache<Tab[]>("my-links-tabs") ?? [])
+        setSettings({ ...DEFAULT_SETTINGS, ...readCache<Partial<Settings>>("my-links-settings") })
       }
-
-      if (remoteTabs && remoteTabs.length > 0) {
-        setTabs(remoteTabs)
-        localStorage.setItem("my-links-tabs", JSON.stringify(remoteTabs))
-      } else {
-        // 최초 DB 생성 시 현재 기본 탭 저장
-        saveRemoteTabs(loadedTabs)
-      }
-
-      if (remoteSettings) {
-        const mergedSettings = { ...DEFAULT_SETTINGS, ...remoteSettings }
-        setSettings(mergedSettings)
-        localStorage.setItem("my-links-settings", JSON.stringify(mergedSettings))
-      } else {
-        // 최초 DB 생성 시 현재 기본 설정 저장
-        saveRemoteSettings(loadedSettings)
-      }
+      setIsLoaded(true)
     })
 
     // 실시간 동기화 구독
     const unsubscribe = subscribeToRemoteChanges(
-      (newLinks) => {
-        setLinks(newLinks)
-        localStorage.setItem("my-links", JSON.stringify(newLinks))
-      },
-      (newTabs) => {
-        setTabs(newTabs)
-        localStorage.setItem("my-links-tabs", JSON.stringify(newTabs))
-      },
+      (newLinks) => setLinks(newLinks),
+      (newTabs) => setTabs(newTabs),
       (newSettings) => {
         const merged = { ...DEFAULT_SETTINGS, ...newSettings }
         setSettings(merged)
-        localStorage.setItem("my-links-settings", JSON.stringify(merged))
+        writeCache("my-links-settings", merged)
       }
     )
 
     return () => {
+      cancelled = true
       unsubscribe()
     }
   }, [])
@@ -343,8 +143,9 @@ function HomeContent() {
     const title = searchParams.get("title")
 
     if (isAdd === "1" && url) {
-      setQuickAddUrl(decodeURIComponent(url))
-      setQuickAddTitle(title ? decodeURIComponent(title) : "")
+      // searchParams.get()은 이미 디코딩된 값을 반환
+      setQuickAddUrl(url)
+      setQuickAddTitle(title ?? "")
       setIsModalOpen(true)
       router.replace("/", { scroll: false })
     }
@@ -352,11 +153,7 @@ function HomeContent() {
 
   const handleSettingsChange = (newSettings: Settings) => {
     setSettings(newSettings)
-    try {
-      localStorage.setItem("my-links-settings", JSON.stringify(newSettings))
-    } catch (e) {
-      console.error("Failed to save settings to localStorage", e)
-    }
+    writeCache("my-links-settings", newSettings)
     saveRemoteSettings(newSettings)
   }
 
@@ -374,32 +171,17 @@ function HomeContent() {
     const updated = [...tabs, newTab]
     setTabs(updated)
     handleSelectTab(newTab.id)
-    try {
-      localStorage.setItem("my-links-tabs", JSON.stringify(updated))
-    } catch (e) {
-      console.error("Failed to save tabs", e)
-    }
     saveRemoteTabs(updated)
   }
 
   const handleReorderTabs = (newTabs: Tab[]) => {
     setTabs(newTabs)
-    try {
-      localStorage.setItem("my-links-tabs", JSON.stringify(newTabs))
-    } catch (e) {
-      console.error("Failed to save tabs", e)
-    }
     saveRemoteTabs(newTabs)
   }
 
   const handleEditTab = (tabId: string, newName: string) => {
     const updated = tabs.map((t) => (t.id === tabId ? { ...t, name: newName } : t))
     setTabs(updated)
-    try {
-      localStorage.setItem("my-links-tabs", JSON.stringify(updated))
-    } catch (e) {
-      console.error("Failed to save tabs", e)
-    }
     saveRemoteTabs(updated)
   }
 
@@ -411,7 +193,7 @@ function HomeContent() {
     const index = tabs.findIndex((t) => t.id === tabId)
     const updatedTabs = [...tabs.slice(0, index + 1), newTab, ...tabs.slice(index + 1)]
     const copiedLinks = links
-      .filter((l) => (l.tabId || "tab-community") === tabId)
+      .filter((l) => l.tabId === tabId)
       .map((l, i) => ({ ...l, id: `${stamp}-${i}`, tabId: newTab.id }))
     const updatedLinks = [...links, ...copiedLinks]
     setTabs(updatedTabs)
@@ -422,7 +204,9 @@ function HomeContent() {
   }
 
   const handleDeleteTab = (tabId: string) => {
-    const fallbackTabId = tabs.find((t) => t.id !== tabId)?.id || "tab-community"
+    const fallbackTabId = tabs.find((t) => t.id !== tabId)?.id
+    // 마지막 탭은 삭제 불가 — 링크가 갈 곳이 없어짐
+    if (!fallbackTabId) return
     const updatedTabs = tabs.filter((t) => t.id !== tabId)
     const updatedLinks = links.map((l) => (l.tabId === tabId ? { ...l, tabId: fallbackTabId } : l))
     setTabs(updatedTabs)
@@ -430,26 +214,17 @@ function HomeContent() {
     if (activeTabId === tabId) {
       handleSelectTab("all")
     }
-    try {
-      localStorage.setItem("my-links-tabs", JSON.stringify(updatedTabs))
-      localStorage.setItem("my-links", JSON.stringify(updatedLinks))
-    } catch (e) {
-      console.error("Failed to save tabs and links", e)
-    }
     saveRemoteTabs(updatedTabs)
     saveRemoteLinks(updatedLinks)
   }
 
+  // 오프라인 캐시 갱신 (Supabase 조회 실패 시 표시용)
   useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem("my-links", JSON.stringify(links))
-    }
+    if (isLoaded) writeCache("my-links", links)
   }, [links, isLoaded])
 
   useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem("my-links-tabs", JSON.stringify(tabs))
-    }
+    if (isLoaded) writeCache("my-links-tabs", tabs)
   }, [tabs, isLoaded])
 
   useEffect(() => {
@@ -480,32 +255,30 @@ function HomeContent() {
   const linkCounts = useMemo(() => {
     const counts: Record<string, number> = {}
     links.forEach((link) => {
-      const tId = link.tabId || "tab-community"
-      counts[tId] = (counts[tId] || 0) + 1
+      counts[link.tabId] = (counts[link.tabId] || 0) + 1
     })
     return counts
   }, [links])
 
   const currentLinks = useMemo(() => {
     if (activeTabId === "all") return links
-    return links.filter((link) => (link.tabId || "tab-community") === activeTabId)
+    return links.filter((link) => link.tabId === activeTabId)
   }, [links, activeTabId])
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
     if (over && active.id !== over.id) {
-      setLinks((prev) => {
-        const oldIndex = prev.findIndex((l) => l.id === active.id)
-        const newIndex = prev.findIndex((l) => l.id === over.id)
-        const updated = arrayMove(prev, oldIndex, newIndex)
-        saveRemoteLinks(updated)
-        return updated
-      })
+      const oldIndex = links.findIndex((l) => l.id === active.id)
+      const newIndex = links.findIndex((l) => l.id === over.id)
+      const updated = arrayMove(links, oldIndex, newIndex)
+      setLinks(updated)
+      saveRemoteLinks(updated)
     }
   }
 
   const handleAddLink = (title: string, url: string, tabId?: string) => {
-    const targetTabId = tabId || (activeTabId === "all" ? (tabs[0]?.id || "tab-community") : activeTabId)
+    const targetTabId = tabId || (activeTabId === "all" ? tabs[0]?.id : activeTabId)
+    if (!targetTabId) return
     const newLink: Link = {
       id: Date.now().toString(),
       title,
@@ -529,8 +302,8 @@ function HomeContent() {
     saveRemoteLinks(updated)
   }
 
-  const handleRenameLink = (id: string, title: string) => {
-    const updated = links.map((link) => (link.id === id ? { ...link, title } : link))
+  const handleEditLink = (id: string, title: string, url: string) => {
+    const updated = links.map((link) => (link.id === id ? { ...link, title, url } : link))
     setLinks(updated)
     saveRemoteLinks(updated)
   }
@@ -653,10 +426,10 @@ function HomeContent() {
                   id={link.id}
                   title={link.title}
                   url={link.url}
-                  tabId={link.tabId || "tab-community"}
+                  tabId={link.tabId}
                   tabs={tabs}
                   onDelete={handleDeleteLink}
-                  onRename={handleRenameLink}
+                  onEdit={handleEditLink}
                   onMove={(id, tabId) => handleMoveLinks([id], tabId)}
                   onReorder={() => setIsEditLayoutMode(true)}
                   onStartSelect={handleStartSelect}

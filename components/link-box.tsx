@@ -30,7 +30,7 @@ interface LinkBoxProps {
   isSelectionMode?: boolean
   isSelected?: boolean
   onDelete: (id: string) => void
-  onRename?: (id: string, title: string) => void
+  onEdit?: (id: string, title: string, url: string) => void
   onMove?: (id: string, tabId: string) => void
   onReorder?: () => void
   onStartSelect?: (id: string) => void
@@ -40,23 +40,24 @@ interface LinkBoxProps {
 export function LinkBox({
   id, title, url, tabId, size = "medium", tabs = [],
   isSelectionMode = false, isSelected = false,
-  onDelete, onRename, onMove, onReorder, onStartSelect, onSelect,
+  onDelete, onEdit, onMove, onReorder, onStartSelect, onSelect,
 }: LinkBoxProps) {
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const didLongPress = useRef(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [isRenaming, setIsRenaming] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
   const [draftTitle, setDraftTitle] = useState(title)
+  const [draftUrl, setDraftUrl] = useState(url)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const hasMenu = !!(onRename || onMove || onReorder || onStartSelect)
+  const hasMenu = !!(onEdit || onMove || onReorder || onStartSelect)
 
   useEffect(() => {
-    if (isRenaming) {
+    if (isEditing) {
       inputRef.current?.focus()
       inputRef.current?.select()
     }
-  }, [isRenaming])
+  }, [isEditing])
 
   const getFaviconUrl = (siteUrl: string) => {
     try {
@@ -124,15 +125,20 @@ export function LinkBox({
     if (hasMenu && !isSelectionMode) setIsMenuOpen(true)
   }
 
-  const startRename = () => {
+  const startEdit = () => {
     setDraftTitle(title)
-    setIsRenaming(true)
+    setDraftUrl(url)
+    setIsEditing(true)
   }
 
-  const commitRename = () => {
-    const next = draftTitle.trim()
-    if (next && next !== title) onRename?.(id, next)
-    setIsRenaming(false)
+  const commitEdit = () => {
+    const nextTitle = draftTitle.trim() || title
+    let nextUrl = draftUrl.trim() || url
+    if (!nextUrl.startsWith("http://") && !nextUrl.startsWith("https://")) {
+      nextUrl = "https://" + nextUrl
+    }
+    if (nextTitle !== title || nextUrl !== url) onEdit?.(id, nextTitle, nextUrl)
+    setIsEditing(false)
   }
 
   const favNode = (
@@ -150,28 +156,44 @@ export function LinkBox({
     </div>
   )
 
-  if (isRenaming) {
+  if (isEditing) {
+    const inputClass = `${getTextSize()} w-full min-w-0 bg-transparent outline-none text-foreground`
     return (
       <div className="relative rounded-lg ring-1 ring-primary bg-card min-w-0">
         <form
-          className={`flex items-center gap-2.5 ${getRowPadding()} w-full min-w-0`}
+          className={`flex items-start gap-2.5 ${getRowPadding()} w-full min-w-0`}
           onSubmit={(e) => {
             e.preventDefault()
-            commitRename()
+            commitEdit()
+          }}
+          onBlur={(e) => {
+            // 폼 바깥으로 포커스가 나갈 때만 저장 (이름 ↔ URL 입력칸 이동은 무시)
+            if (!e.currentTarget.contains(e.relatedTarget as Node | null)) commitEdit()
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setIsEditing(false)
           }}
         >
-          {favNode}
-          <input
-            ref={inputRef}
-            value={draftTitle}
-            onChange={(e) => setDraftTitle(e.target.value)}
-            onBlur={commitRename}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") setIsRenaming(false)
-            }}
-            className={`${getTextSize()} flex-1 min-w-0 bg-transparent outline-none text-foreground`}
-            aria-label="링크 이름"
-          />
+          <div className="pt-0.5">{favNode}</div>
+          <div className="flex-1 min-w-0 flex flex-col gap-1">
+            <input
+              ref={inputRef}
+              value={draftTitle}
+              onChange={(e) => setDraftTitle(e.target.value)}
+              className={inputClass}
+              placeholder="이름"
+              aria-label="링크 이름"
+            />
+            <input
+              value={draftUrl}
+              onChange={(e) => setDraftUrl(e.target.value)}
+              className={`${inputClass} text-muted-foreground border-t border-border pt-1`}
+              placeholder="URL"
+              aria-label="링크 URL"
+              inputMode="url"
+            />
+            <button type="submit" className="hidden" />
+          </div>
         </form>
       </div>
     )
@@ -235,10 +257,10 @@ export function LinkBox({
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-44">
-            {onRename && (
-              <DropdownMenuItem onSelect={startRename}>
+            {onEdit && (
+              <DropdownMenuItem onSelect={startEdit}>
                 <Pencil />
-                이름 변경
+                편집
               </DropdownMenuItem>
             )}
             {onMove && tabs.length > 1 && (
